@@ -160,7 +160,7 @@ print('----------------------------------------------------')
 
 def update_inventory_json_file(dataframe):
     """
-    This function update the inventory.json file according to latest status of inventory
+    This function update the inventory.json file according to latest status of inventory; Here new inventory data is saved as "inventory copy.json" file to keep the original 'inventory.json' file intact for furthur validation
     """
     dataframe = dataframe.reset_index()
     dataframe["stock"] = dataframe["stock"].astype(int).astype(str)
