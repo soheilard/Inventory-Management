@@ -4,19 +4,21 @@ import numpy as np
 
 #=========================================================================================================
 ## Inventory
-# reading the inventory JSON data
+# Reading the inventory JSON data to a dictionary file
 inv_file = 'inventory copy.json'
 with open(inv_file) as inventory_file:
     dict_inventory = json.load(inventory_file)
 
 ## Products
-# reading the Products JSON data
+# Reading the Products JSON data to a dictionary file
 prod_file = 'products.json'
 with open(prod_file) as products_file:
     dict_products = json.load(products_file)
 
 #=========================================================================================================
-# Get all keys and values for more detailed information
+"""
+    The code snippet below can be used to monitor the required articles for each product; 
+"""
 
 # for i in range(0, len(dict_inventory)):
 #    for key, value in dict_inventory.items(): 
@@ -27,39 +29,49 @@ with open(prod_file) as products_file:
 #        print(key + ':', value)
 
 #=========================================================================================================
-## Create a DataFrame from inventory file
+"""
+    Create a DataFrame from inventory data
+"""
 
+## Create a DataFrame from inventory file by iterating over keys of inventory dictionary file
 df_inventory = pd.DataFrame()
-
 for key in dict_inventory.keys():
-    inv_value = dict_inventory.get(key)
-    for item in inv_value:
+    inventory_value = dict_inventory.get(key)
+    for item in inventory_value:
         df_single_item = pd.DataFrame([item])
         df_inventory = pd.concat([df_inventory, df_single_item])
 
+# Set art_id column as index
 df_inventory = df_inventory.set_index("art_id")
 df_inventory["stock"] = df_inventory["stock"].astype(int)
+
 print("Current inventory overview:")
 print('====================================================')
 print(df_inventory)
 print('----------------------------------------------------')
+
 #=========================================================================================================
 # Create DataFrame from Products
 
+## Create a DataFrame from products file by iterating over keys of products dictionary file
 df_products = pd.DataFrame()
-
 for key in dict_products.keys():
     prod_value = dict_products.get(key)
     for item in prod_value:
         df_single_item = pd.DataFrame([item])
         df_products = pd.concat([df_products, df_single_item])
 
-# get name of all products
+# Create a list of names of all products
 product_names = df_products.name.unique()
+
+# set "name" column as index for each product DataFrame
 new_df_products = df_products.set_index("name")
 
 ## Create a DataFrame for each product
 def create_df_product(list_articles):
+    """
+    Creates a dataframe which represents the required articles for each product as a DataFrame
+    """
     df_product = pd.DataFrame()
     for article in list_articles:
         df_single_article = pd.DataFrame([article])
@@ -71,6 +83,10 @@ def create_df_product(list_articles):
 # Create a function to get the list of available products in inventory with their quantity:
 
 def get_quantity_of_available_product(product_names, latest_df_inventory):
+    """
+    This function get the list of product names and latest available articles in the inventory and returns the available quantity of
+    each product in the inventory
+    """
     dict_of_products_df = {}
     available_quantity_all_products = []
 
@@ -79,9 +95,12 @@ def get_quantity_of_available_product(product_names, latest_df_inventory):
         df_name = product + '_df'
         dict_of_products_df[df_name] = create_df_product(articles_list)
 
+        # Outer join DataFrame of each product with inventory DataFrame to calculate the available quantity
         inventory_product_df =pd.concat([latest_df_inventory, dict_of_products_df[df_name]], axis=1)
         inventory_product_df["amount_of"] = inventory_product_df.amount_of.fillna(0).astype(int)
-        inventory_product_df["possible_quantity"] = inventory_product_df['stock'].div(inventory_product_df['amount_of'])#.replace(np.inf, 0)
+
+        # Calculate the possible quantity of each product to be sold by dividing available 'stock' of each article by the required "amount_of" it per product
+        inventory_product_df["possible_quantity"] = inventory_product_df['stock'].div(inventory_product_df['amount_of'])
         possible_number_product = inventory_product_df.possible_quantity.min()
 
         if possible_number_product < 1:
@@ -93,7 +112,14 @@ def get_quantity_of_available_product(product_names, latest_df_inventory):
 
 #=========================================================================================================
 
-def sell_a_product(product_name, latest_df_inventory, quantity_of_available_product):
+def sell_a_product(
+    product_name,
+    latest_df_inventory, 
+    quantity_of_available_product):
+
+    """
+    This function updates inventory dataframe after selling/removing a product from inventory.
+    """
 
     articles_list = new_df_products.loc[product_name, "contain_articles"]
     df_name = product_name + '_df'
@@ -133,6 +159,9 @@ print('----------------------------------------------------')
 # Function to update inventory.json file
 
 def update_inventory_json_file(dataframe):
+    """
+    This function update the inventory.json file according to latest status of inventory
+    """
     dataframe = dataframe.reset_index()
     dataframe["stock"] = dataframe["stock"].astype(int).astype(str)
     result = dataframe.to_dict('records')
@@ -143,6 +172,11 @@ def update_inventory_json_file(dataframe):
 ############################################################################################################
 
 product_quantiy_dict = {product_names[0] : get_quantity_of_available_product(product_names, df_inventory)[0], product_names[1] : get_quantity_of_available_product(product_names, df_inventory)[1]}
+
+"""
+    - Add the name product to product_name variable below. Then by running the code, inventory.json is updated considering this product is sold/removed from inventory!
+    - If the product name is not listed in product.json file, then a warning is shown to make sure product name is written correctly!
+"""
 
 product_name = 'Dining Chair'
 if product_name in product_names:
