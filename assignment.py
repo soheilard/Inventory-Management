@@ -1,18 +1,51 @@
 import json
 import pandas as pd
 import numpy as np
+import argparse
+
+#=========================================================================================================
+"""
+- Uncomment section below in order to run the script via command line
+- Example command to run via cmd:
+     assignment.py -a "inventory.json" -b "products.json" -c "updated inventory.json" -d "Dining Chair" 
+"""
+
+# ap = argparse.ArgumentParser()
+# ap.add_argument("-a", "--input_inv_file", required=True, help="input inventory json file name")
+# ap.add_argument("-b", "--products_file", required=True, help="products json file name")
+# ap.add_argument("-c", "--output_inv_file", required=True, help="output inventory json file name")
+# ap.add_argument("-d", "--product", required=True, help="name of product")
+# args = vars(ap.parse_args())
+# args = ap.parse_args()
+
+# inventory_file = args.input_inv_file
+# products_file = args.products_file
+# updated_inventory_file = args.output_inv_file
+# product_name = args.product
+
+#=========================================================================================================
+"""
+    Comment out section below in order to run the script via command line
+"""
+
+## Enter the input parameters here:
+
+inventory_file = 'inventory.json'
+products_file = 'products.json'
+updated_inventory_file = 'updated inventory.json'
+product_name = 'Dining Chair' # select one of 'Dining Chair' or 'Dinning Table'
 
 #=========================================================================================================
 ## Inventory
 # Reading the inventory JSON data to a dictionary file
-inv_file = 'inventory copy.json'
-with open(inv_file) as inventory_file:
+
+with open(inventory_file) as inventory_file:
     dict_inventory = json.load(inventory_file)
 
 ## Products
 # Reading the Products JSON data to a dictionary file
-prod_file = 'products.json'
-with open(prod_file) as products_file:
+
+with open(products_file) as products_file:
     dict_products = json.load(products_file)
 
 #=========================================================================================================
@@ -158,19 +191,18 @@ print('----------------------------------------------------')
 #=========================================================================================================
 # Function to update inventory.json file
 
-def update_inventory_json_file(dataframe):
+def update_inventory_json_file(dataframe, output_file_name):
     """
-    This function update the inventory.json file according to latest status of inventory; Here new inventory data is saved as "inventory copy.json" file to keep the original 'inventory.json' file intact for furthur validation
+    This function update the inventory.json file according to latest status of inventory; Here new inventory data is saved as "updated inventory.json" file to keep the original 'inventory.json' file intact for furthur validation
     """
     dataframe = dataframe.reset_index()
     dataframe["stock"] = dataframe["stock"].astype(int).astype(str)
     result = dataframe.to_dict('records')
     data = {"inventory" : result}
-    with open('inventory copy.json', 'w') as fp:
+    with open(output_file_name, 'w') as fp:
         json.dump(data, fp, indent = 2)
 
-############################################################################################################
-
+#=========================================================================================================
 product_quantiy_dict = {product_names[0] : get_quantity_of_available_product(product_names, df_inventory)[0], product_names[1] : get_quantity_of_available_product(product_names, df_inventory)[1]}
 
 """
@@ -178,17 +210,14 @@ product_quantiy_dict = {product_names[0] : get_quantity_of_available_product(pro
     - If the product name is not listed in product.json file, then a warning is shown to make sure product name is written correctly!
 """
 
-product_name = 'Dining Chair'
 if product_name in product_names:
     new_inventory_df = sell_a_product(product_name,  df_inventory, product_quantiy_dict[product_name])
 
     # Update and save inventory.json file
     df_inventory = new_inventory_df.copy()
-    update_inventory_json_file(df_inventory)
+    update_inventory_json_file(df_inventory, updated_inventory_file)
 
 else:
     print(f"{product_name} is not a recognized product! Make sure you are entering the correct product name")
-############################################################################################################
-
-
+#=========================================================================================================
 
